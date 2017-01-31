@@ -10,4 +10,5 @@ This is a base template to get started with networking related projects
   Use this as a starting point for all networking related stuff .
 2.UDP Protocol
   gcc listener.c -o l
-  gcc 
+  gcc talker.c -o t
+  This has one way communication 

@@ -15,6 +15,28 @@
 
 #define SERVERPORT "4950"    // the port users will be connecting to
 
+void broadcastmp3(int sockfd,struct addrinfo* p){
+  FILE *fp;int numbytes;
+	int buffersz=50000;
+	char buffer[buffersz];
+	//char out[]="hello";
+	fp=fopen("akon.mp3","r");
+	int x=0;
+	while(x!=-1){
+		fread(buffer,buffersz,1,fp);
+    if ((numbytes = sendto(sockfd, buffer, buffersz, 0,
+             p->ai_addr, p->ai_addrlen)) == -1) {
+        perror("talker: sendto");
+        exit(1);
+    }
+    printf("Bytes transferred:%d\n",numbytes);
+  	sleep(1);
+		}
+	fclose(fp);
+	//printf("hwllo world\n");
+	}
+
+
 int main(int argc, char *argv[])
 {
     int sockfd;
@@ -52,6 +74,8 @@ int main(int argc, char *argv[])
         return 2;
     }
 
+    broadcastmp3(sockfd,p);
+
     if ((numbytes = sendto(sockfd, argv[2], strlen(argv[2]), 0,
              p->ai_addr, p->ai_addrlen)) == -1) {
         perror("talker: sendto");
@@ -61,7 +85,7 @@ int main(int argc, char *argv[])
     freeaddrinfo(servinfo);
 
     printf("talker: sent %d bytes to %s\n", numbytes, argv[1]);
-    
+
     close(sockfd);
 
     return 0;

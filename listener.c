@@ -26,7 +26,20 @@ void *get_in_addr(struct sockaddr *sa)
 
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
-
+void listener(int sockfd){
+  int buffersz=50000;int numbytes;
+  struct sockaddr_storage their_addr;
+  socklen_t addr_len=sizeof(their_addr);
+  char *buffer[buffersz];
+  while(numbytes!=-1){
+  if ((numbytes = recvfrom(sockfd, buffer, buffersz, 0,
+      (struct sockaddr *)&their_addr, &addr_len)) == -1) {
+      perror("recvfrom");
+      exit(1);
+  }
+  fwrite(buffer,1,buffersz,stdout);
+  }
+}
 int main(void)
 {
     int sockfd;
@@ -75,6 +88,10 @@ int main(void)
     printf("listener: waiting to recvfrom...\n");
 
     addr_len = sizeof their_addr;
+
+    listener(sockfd);
+    exit(-1);
+
     if ((numbytes = recvfrom(sockfd, buf, MAXBUFLEN-1 , 0,
         (struct sockaddr *)&their_addr, &addr_len)) == -1) {
         perror("recvfrom");
