@@ -13,7 +13,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#define MYPORT "4950"    // the port users will be connecting to
+#define MYPORT "5000"    // the port users will be connecting to
 
 #define MAXBUFLEN 100
 
@@ -27,7 +27,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 void listener(int sockfd){
-  int buffersz=50000;int numbytes;
+  int buffersz=1000;int numbytes;
   struct sockaddr_storage their_addr;
   socklen_t addr_len=sizeof(their_addr);
   char *buffer[buffersz];
@@ -90,23 +90,8 @@ int main(void)
     addr_len = sizeof their_addr;
 
     listener(sockfd);
-    exit(-1);
 
-    if ((numbytes = recvfrom(sockfd, buf, MAXBUFLEN-1 , 0,
-        (struct sockaddr *)&their_addr, &addr_len)) == -1) {
-        perror("recvfrom");
-        exit(1);
-    }
+    return(1);
 
-    printf("listener: got packet from %s\n",
-        inet_ntop(their_addr.ss_family,
-            get_in_addr((struct sockaddr *)&their_addr),
-            s, sizeof s));
-    printf("listener: packet is %d bytes long\n", numbytes);
-    buf[numbytes] = '\0';
-    printf("listener: packet contains \"%s\"\n", buf);
 
-    close(sockfd);
-
-    return 0;
 }

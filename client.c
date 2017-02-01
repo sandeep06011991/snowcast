@@ -14,9 +14,10 @@
 
 #include <arpa/inet.h>
 
-#define PORT "3490" // the port client will be connecting to
-
+#define LISTENERPORT "5000" //the port to broadcast mp3
+#define SERVERPORT "4000"
 #define MAXDATASIZE 100 // max number of bytes we can get at once
+
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -34,18 +35,19 @@ int main(int argc, char *argv[])
     char buf[MAXDATASIZE];
     struct addrinfo hints, *servinfo, *p;
     int rv;
+
     char s[INET6_ADDRSTRLEN];
 
-    if (argc != 2) {
-        fprintf(stderr,"usage: client hostname\n");
-        exit(1);
-    }
+    // if (argc != 2) {
+    //     fprintf(stderr,"usage: client hostname\n");
+    //     exit(1);
+    // }
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(NULL, SERVERPORT, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
@@ -78,21 +80,21 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-        perror("recv");
-        exit(1);
+    //Sending client port
+    char cport[]=LISTENERPORT;
+    if(4!=send(sockfd,&cport,4,0)){
+      perror("sending IP failed");
+    }
+    printf("Listen port sent");
+    int temp;
+    printf("Enter a no. to continue");
+    scanf("%d",&temp);
+    char chan[]="1";
+    if(2!=send(sockfd,chan,2,0)){
+      perror("Channel switch failed");
     }
 
-    buf[numbytes] = '\0';
-
-    printf("client: received '%s'\n",buf);
-
-    char *msg="Client says Hi\n";
-
-    if(strlen(msg)!=send(sockfd,msg,strlen(msg),0)){
-      perror("Sent failed");
-      exit(1);
-    }
+    printf("switch successfull");
 
     close(sockfd);
 

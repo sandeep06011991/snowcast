@@ -1,3 +1,4 @@
-
+all:
+	
 clean:
-	rm a.out c s l t
+	rm server

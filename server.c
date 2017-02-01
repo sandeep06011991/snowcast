@@ -14,8 +14,8 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
-
-#define PORT "3490"  // the port users will be connecting to
+#include <pthread.h>
+#define PORT "4000"  // the port users will be connecting to
 
 #define BACKLOG 10     // how many pending connections queue will hold
 
@@ -29,7 +29,13 @@ void sigchld_handler(int s)
     errno = saved_errno;
 }
 
+struct talker_arg{
+  char *listenerport; int *channel;
+} ;
+extern int talkerfunc(struct talker_arg *arg);
 
+
+int channel=0;
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -118,19 +124,36 @@ int main(void)
             get_in_addr((struct sockaddr *)&their_addr),
             s, sizeof s);
         printf("server: got connection from %s\n", s);
-        char *msg="Server says hi\n";
-        if(send(new_fd,msg,strlen(msg),0) == -1){
-            perror("send");
-            close(new_fd);
-            break;
-          }
-        char buff[1000];
+        // char *msg="Server says hi\n";
+        // if(send(new_fd,msg,strlen(msg),0) == -1){
+        //     perror("send");
+        //     close(new_fd);
+        //     break;
+        //   }
+        char listener_port[]="0000";
         int nmb;
-        if(nmb=recv(new_fd,buff,1000,0)==-1)  {
+        if(nmb=recv(new_fd,listener_port,4,0)==-1)  {
           perror("Server recv Failed");
           exit(1);
         }
-        printf("%s",buff);
+        printf("%s:length\n",listener_port);
+        pthread_t thread;
+        struct talker_arg arg1;
+        arg1.listenerport=listener_port;
+        arg1.channel=&channel;
+        //talkerfunc(&arg1);
+        pthread_create(&thread,NULL,(void *)&talkerfunc,&arg1);
+
+        printf("Change channel");
+        char ch[]="-1";
+        if(nmb=recv(new_fd,ch,2,0)==-1)  {
+          perror("Server recv Failed");
+          exit(1);
+        }
+
+        channel=atoi(ch);
+        printf("CHANNEL CHANGED:%d\n",channel);
+        sleep(10);
         close(new_fd);  // parent doesn't need this
     }
 }

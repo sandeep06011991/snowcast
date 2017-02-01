@@ -13,47 +13,72 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#define SERVERPORT "4950"    // the port users will be connecting to
 
-void broadcastmp3(int sockfd,struct addrinfo* p){
-  FILE *fp;int numbytes;
-	int buffersz=50000;
+struct talker_arg{
+  char *listenerport; int *channel;
+} ;
+
+
+void broadcastmp3(int sockfd,struct addrinfo* p,int *channel){
+  FILE *fp;int numbytes;int t=0;
+	int buffersz=1000;
 	char buffer[buffersz];
+  int bfread=buffersz;
 	//char out[]="hello";
-	fp=fopen("akon.mp3","r");
-	int x=0;
-	while(x!=-1){
-		fread(buffer,buffersz,1,fp);
-    if ((numbytes = sendto(sockfd, buffer, buffersz, 0,
+	fp=NULL;
+
+  int prev=-1;
+	while(bfread== buffersz){
+  if(prev!=*channel){
+      prev=*channel;
+      printf("%d setting channel",prev);
+      if(fp!=NULL){fclose(fp);}
+      switch(prev){
+        case 0: fp=fopen("akon.mp3","r");
+                printf("akon opened\n");
+                break;
+        case 1:fp=fopen("lakshya.mp3","r");
+                fseek(fp,0,0);
+                break;
+        default:printf("Channel not found");
+                exit(1);
+
+        }
+  }
+  else{
+    bfread=fread(buffer,1,buffersz,fp);
+    if ((numbytes = sendto(sockfd, buffer, bfread , 0,
              p->ai_addr, p->ai_addrlen)) == -1) {
         perror("talker: sendto");
         exit(1);
     }
-    printf("Bytes transferred:%d\n",numbytes);
-  	sleep(1);
+    t=t+numbytes;
+    printf("Bytes transferred:%d% d\n",numbytes,bfread);
+  	usleep(20000);
 		}
-	fclose(fp);
+
 	//printf("hwllo world\n");
 	}
+  if(fp!=NULL)fclose(fp);
+}
 
 
-int main(int argc, char *argv[])
-{
+
+int talkerfunc(struct talker_arg *arg){
+    char *listenerport=arg->listenerport;
+    int *channel=arg->channel;
+    printf("Talker thread started with port:%s,channer: %d\n",listenerport,*channel);
+
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
     int rv;
     int numbytes;
 
-    if (argc != 3) {
-        fprintf(stderr,"usage: talker hostname message\n");
-        exit(1);
-    }
-
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_DGRAM;
 
-    if ((rv = getaddrinfo(argv[1], SERVERPORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo("localhost", listenerport, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
@@ -74,19 +99,21 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    broadcastmp3(sockfd,p);
+    broadcastmp3(sockfd,p,channel);
 
-    if ((numbytes = sendto(sockfd, argv[2], strlen(argv[2]), 0,
-             p->ai_addr, p->ai_addrlen)) == -1) {
-        perror("talker: sendto");
-        exit(1);
-    }
 
-    freeaddrinfo(servinfo);
+    //
+    // if ((numbytes = sendto(sockfd, argv[2], strlen(argv[2]), 0,
+    //          p->ai_addr, p->ai_addrlen)) == -1) {
+    //     perror("talker: sendto");
+    //     exit(1);
+    // }
+    //
+    // freeaddrinfo(servinfo);
+    //
+    // printf("talker: sent %d bytes to %s\n", numbytes, argv[1]);
 
-    printf("talker: sent %d bytes to %s\n", numbytes, argv[1]);
-
-    close(sockfd);
+  //  close(sockfd);
 
     return 0;
 }
